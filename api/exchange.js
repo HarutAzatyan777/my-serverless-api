@@ -1,9 +1,19 @@
 let cachedData = null;
 let lastFetchTime = 0;
-const CACHE_DURATION = 60 * 60 * 1000; // 1 hour
+
+// Cache for 1 hour
+const CACHE_DURATION = 60 * 60 * 1000;
 
 export default async function handler(req, res) {
-  const { base = "USD" } = req.query;
+  // Enable CORS
+  res.setHeader("Access-Control-Allow-Origin", "*"); // allow all origins
+  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  // Handle preflight request
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
 
   try {
     const now = Date.now();
@@ -13,15 +23,16 @@ export default async function handler(req, res) {
     }
 
     const response = await fetch(
-      `https://v6.exchangerate-api.com/v6/75b5f33668e01d5cefc564dc/latest/${base}`
+      "https://v6.exchangerate-api.com/v6/75b5f33668e01d5cefc564dc/latest/USD"
     );
+
     const data = await response.json();
 
     cachedData = data;
     lastFetchTime = now;
 
-    res.status(200).json({ source: "live", ...data });
+    return res.status(200).json({ source: "live", ...data });
   } catch (err) {
-    res.status(500).json({ error: "Failed to load exchange rates" });
+    return res.status(500).json({ error: "Failed to load exchange rates" });
   }
 }
